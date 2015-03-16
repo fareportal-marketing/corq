@@ -24,7 +24,7 @@
 	var consecutiveFails = 0;
 	var debug,that;
 
-	var corq = function(msFrequency, msDelay, chatty){
+	var corq = function(msFrequency, msDelay, chatty, autostart){
 		this.version = '0.0.1';
 		this.queue = Q;
 		this.running = false;
@@ -33,6 +33,7 @@
 		this.delayLength = msDelay || 1000 * 30; //default to 30sec
 		that = this;
 		debug = chatty || false;
+		this.autostart = autostart || false;
 		$debug('Corq initialized. Freq: ' + this.frequency + 'ms, Cooldown: ' + this.delayLength + 'ms');
 		return this;
 	};
@@ -49,6 +50,9 @@
 			Q = data;
 			$debug('Corq: Data loaded');
 			$debug(Q);
+			if(that.autostart){
+				that.start();
+			}
 		});
 		return this;
 	};
@@ -64,6 +68,16 @@
 			$next();
 		}
 		return this;
+	};
+
+	//start the queue		
+	corq.prototype.start = function(){		
+		if (debug){		
+			console.log('Corq: Queue started');		
+		}		
+		this.running = true;		
+		$next();		
+		return this;		
 	};
 
 	//stop the queue
