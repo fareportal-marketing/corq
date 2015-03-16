@@ -1,6 +1,6 @@
 {
   "name": "corq",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A trustworthy item-processing queue. Never lose data to an error again.",
   "main": "corq.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/atuttle/corq.git"
+    "url": "git://github.com/fareportal-marketing/corq.git"
   },
   "keywords": [
     "sync",
@@ -21,7 +21,7 @@
   "author": "Adam Tuttle",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/atuttle/corq/issues"
+    "url": "https://github.com/fareportal-marketing/corq/issues"
   },
-  "homepage": "https://github.com/atuttle/corq"
+  "homepage": "https://github.com/fareportal-marketing/corq"
 }
