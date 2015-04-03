@@ -64,8 +64,10 @@
 		$debug('Corq: Item added to queue `' + type + '`');
 		$debug(item);
 		if (!this.running){
-			this.running = true;
-			$next();
+			setTimeout(function(){
+				this.running = true;
+				$next();
+			}, 2000); // delay of 2 secs before pushing
 		}
 		return this;
 	};
