@@ -17,66 +17,160 @@
 //below this line: actual Corq code.
 }(function(){
 
-	var Q = []; //the queue
-	var _persist = null;
-	var _load = null;
-	var callbacks = {};
-	var consecutiveFails = 0;
-	var debug,that;
+
 
 	var corq = function(msFrequency, msDelay, chatty, autostart){
-		this.version = '0.1.7';
-		this.queue = Q;
+		
+		// private variables
+		var _queue = []; //the queue
+		var _persist = null;
+		var _load = null;
+		var _callbacks = {};
+		var _consecutiveFails = 0;
+		var debug = chatty || false;
+
+		// member variables
+		this.version = '0.1.9';
 		this.running = false;
 		this.frequency = msFrequency || 1000 * 5; //default to 5sec
 		this.delay = false;
 		this.delayLength = msDelay || 1000 * 30; //default to 30sec
-		that = this;
-		debug = chatty || false;
 		this.autostart = autostart || false;
-		$debug('Corq initialized. Freq: ' + this.frequency + 'ms, Cooldown: ' + this.delayLength + 'ms');
-		return this;
-	};
 
-	//optional persistence implementation -- use it however you like!
-	corq.prototype.persistVia = function(persistCallback){
-		_persist = persistCallback;
-		return this;
-	};
-	//optional data loading implementation -- asynchronous because that's the lowest common denominator
-	corq.prototype.loadVia = function(loadCallback){
-		$debug('Corq: Loading data...');
-		loadCallback(function(data){
-			Q = data;
-			$debug('Corq: Data loaded');
-			$debug(Q);
-			if(that.autostart){
-				that.start();
+		// private functions
+		function $next(){
+			if (_queue.length){
+				$item(_queue[0]);
+			}else{
+				_self.running = false;
+				$debug('Corq: No items to process, shutting down the queue');
 			}
-		});
+		}
+
+		//calls all necessary handlers for this item
+		function $item(item){
+			var _self = this;
+			var typeName = item.type;
+			if (!_callbacks[typeName]){
+				throw "Item handler not found for items of type `" + typeName + "`";
+			}
+			$debug('Corq: Calling handler for item `' + typeName + '`');
+			$debug(item.data);
+			var _next = function(){
+					var freq = (_self.delay) ? _self.delayLength : _self.frequency;
+					setTimeout(function(){
+						$next();
+				}, freq);
+			};
+			var _success = function(){
+				$debug('Corq: Item processing SUCCESS `' + typeName + '` ');
+				$debug(item.data);
+				$success(item);
+				_next();
+			};
+			var _fail = function(){
+				$debug('Corq: Item processing FAILURE `' + typeName + '` ');
+				$debug(item.data);
+				$fail(item);
+				_next();
+			};
+			try {
+				_callbacks[typeName](item.data, _success, _fail);
+			}catch(e){
+				$debug('Corq: Error thrown by item processing function `' + typeName + '` ');
+				$debug(item.data);
+				_fail();
+				throw e;
+			}
+		}
+
+		function $success(item){
+			this.delay = false;
+			_consecutiveFails = 0;
+			$delete(item.id);
+		}
+
+		function $fail(item){
+			_consecutiveFails++;
+			$requeue(item);
+			if (_consecutiveFails >= _queue.length){
+				$debug('Corq: Queue is all failures, initiating cooldown (' + that.delayLength + 'ms)');
+				this.delay = true;
+			}
+		}
+
+		function $requeue(item){
+			_queue.push($clone(item));
+			$delete(item.id);
+		}
+
+		function $delete(itemId){
+			for (var i = 0; i < _queue.length; i++){
+				if (_queue[i].id === itemId) {
+					$debug('Corq: Item deleted from queue `' + _queue[i].type + '` ');
+					$debug(_queue[i].data);
+					_queue.splice(i,1);
+					if (_persist){ _persist(_queue); }
+					break;
+				}
+			}
+		}
+
+
+
+
+		this.persistVia = function(persistCallback){
+			_persist = persistCallback;
+			return this;
+		};
+
+		this.loadVia = function(loadCallback){
+			$debug('Corq: Loading data...');
+			loadCallback(function(data){
+				_queue = data;
+				$debug('Corq: Data loaded');
+				$debug(_queue);
+				if(_self.autostart){
+					_self.start();
+				}
+			});
+			return this;
+		};
+
+		//add an item to the queue
+		this.push = function(type, item){
+			_queue.push( { data:item, type:type, id:$guid() } );
+			if (_persist){ _persist(_queue); }
+			$debug('Corq: Item added to queue `' + type + '`');
+			$debug(item);
+			if (!this.running){
+				setTimeout(function(){
+					_self.running = true;
+					$next();
+				}, 2000); // delay of 2 secs before pushing
+			}
+			return this;
+		};
+
+		//register item handlers
+		this.on = function(typeName, callback){
+			if (_callbacks[typeName]){
+				throw "You may only have one handler per item type. You already have one for `" + typeName + "`";
+			}
+			callbacks[typeName] = callback;
+			$debug('Corq: Handler registered for `' + typeName + '`');
+			return this;
+		};		
+
+		$debug('Corq initialized. Freq: ' + this.frequency + 'ms, Cooldown: ' + this.delayLength + 'ms');
+
 		return this;
 	};
 
-	//add an item to the queue
-	corq.prototype.push = function(type, item){
-		Q.push( { data:item, type:type, id:$guid() } );
-		if (_persist){ _persist(Q); }
-		$debug('Corq: Item added to queue `' + type + '`');
-		$debug(item);
-		if (!this.running){
-			setTimeout(function(){
-				this.running = true;
-				$next();
-			}, 2000); // delay of 2 secs before pushing
-		}
-		return this;
-	};
 
 	//start the queue		
 	corq.prototype.start = function(){		
-		if (debug){		
-			console.log('Corq: Queue started');		
-		}		
+		$debug('Corq: Queue started');		
 		this.running = true;		
 		$next();		
 		return this;		
@@ -88,93 +182,6 @@
 		$debug('Corq: Queue stopped');
 		return this;
 	};
-
-	//register item handlers
-	corq.prototype.on = function(typeName, callback){
-		if (callbacks[typeName]){
-			throw "You may only have one handler per item type. You already have one for `" + typeName + "`";
-		}
-		callbacks[typeName] = callback;
-		$debug('Corq: Handler registered for `' + typeName + '`');
-		return this;
-	};
-
-	function $next(){
-		if (Q.length){
-			$item(Q[0]);
-		}else{
-			that.running = false;
-			$debug('Corq: No items to process, shutting down the queue');
-		}
-	}
-
-	//calls all necessary handlers for this item
-	function $item(item){
-		var typeName = item.type;
-		if (!callbacks[typeName]){
-			throw "Item handler not found for items of type `" + typeName + "`";
-		}
-		$debug('Corq: Calling handler for item `' + typeName + '`');
-		$debug(item.data);
-		var _next = function(){
-			var freq = (that.delay) ? that.delayLength : that.frequency;
-			setTimeout(function(){
-				$next();
-			}, freq);
-		};
-		var _success = function(){
-			$debug('Corq: Item processing SUCCESS `' + typeName + '` ');
-			$debug(item.data);
-			$success(item);
-			_next();
-		};
-		var _fail = function(){
-			$debug('Corq: Item processing FAILURE `' + typeName + '` ');
-			$debug(item.data);
-			$fail(item);
-			_next();
-		};
-		try {
-			callbacks[typeName](item.data, _success, _fail);
-		}catch(e){
-			$debug('Corq: Error thrown by item processing function `' + typeName + '` ');
-			$debug(item.data);
-			_fail();
-			throw e;
-		}
-	}
-
-	function $success(item){
-		that.delay = false;
-		consecutiveFails = 0;
-		$delete(item.id);
-	}
-
-	function $fail(item){
-		consecutiveFails++;
-		$requeue(item);
-		if (consecutiveFails >= Q.length){
-			$debug('Corq: Queue is all failures, initiating cooldown (' + that.delayLength + 'ms)');
-			that.delay = true;
-		}
-	}
-
-	function $requeue(item){
-		Q.push($clone(item));
-		$delete(item.id);
-	}
-
-	function $delete(itemId){
-		for (var i = 0; i < Q.length; i++){
-			if (Q[i].id === itemId) {
-				$debug('Corq: Item deleted from queue `' + Q[i].type + '` ');
-				$debug(Q[i].data);
-				Q.splice(i,1);
-				if (_persist){ _persist(Q); }
-				break;
-			}
-		}
-	}
 
 	function $guid(){
 		// http://stackoverflow.com/a/2117523/751
