@@ -228,7 +228,7 @@
 	}
 
 	function $debug(msg){
-		if (debug){
+		if (this.debug){
 			console.log(msg);
 		}
 	}
