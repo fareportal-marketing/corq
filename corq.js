@@ -27,10 +27,13 @@
 		var _load = null;
 		var _callbacks = {};
 		var _consecutiveFails = 0;
-		var debug = chatty || false;
 
 		// member variables
+
+		
+		this.debug = chatty || false;
 		this.version = '0.1.10';
+
 		this.running = false;
 		this.frequency = msFrequency || 1000 * 5; //default to 5sec
 		this.delay = false;
@@ -225,7 +228,7 @@
 	}
 
 	function $debug(msg){
-		if (debug){
+		if (this.debug){
 			console.log(msg);
 		}
 	}
