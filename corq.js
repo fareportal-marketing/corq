@@ -32,7 +32,7 @@
 
 		
 		this.debug = chatty || false;
-		this.version = '0.1.14';
+		this.version = '0.1.15';
 
 		this.running = false;
 		this.frequency = msFrequency || 1000 * 5; //default to 5sec
@@ -165,7 +165,22 @@
 			_callbacks[typeName] = callback;
 			$debug('Corq: Handler registered for `' + typeName + '`');
 			return this;
-		};		
+		};
+
+		this.start = function(){		
+			$debug('Corq: Queue started');		
+			this.running = true;		
+			$next();		
+			return this;		
+		};
+
+		//stop the queue
+		this.stop = function(){
+			this.running = false;
+			$debug('Corq: Queue stopped');
+			return this;
+		};
+
 
 		$debug('Corq initialized. Freq: ' + this.frequency + 'ms, Cooldown: ' + this.delayLength + 'ms');
 
@@ -174,19 +189,6 @@
 
 
 	//start the queue		
-	corq.prototype.start = function(){		
-		$debug('Corq: Queue started');		
-		this.running = true;		
-		$next();		
-		return this;		
-	};
-
-	//stop the queue
-	corq.prototype.stop = function(){
-		this.running = false;
-		$debug('Corq: Queue stopped');
-		return this;
-	};
 
 	function $guid(){
 		// http://stackoverflow.com/a/2117523/751
