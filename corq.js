@@ -32,7 +32,7 @@
 
 		
 		this.debug = chatty || false;
-		this.version = '0.1.11';
+		this.version = '0.1.12';
 
 		this.running = false;
 		this.frequency = msFrequency || 1000 * 5; //default to 5sec
@@ -160,7 +160,7 @@
 			if (_callbacks[typeName]){
 				throw "You may only have one handler per item type. You already have one for `" + typeName + "`";
 			}
-			callbacks[typeName] = callback;
+			_callbacks[typeName] = callback;
 			$debug('Corq: Handler registered for `' + typeName + '`');
 			return this;
 		};		
