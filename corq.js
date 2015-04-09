@@ -32,7 +32,7 @@
 
 		
 		this.debug = chatty || false;
-		this.version = '0.1.10';
+		this.version = '0.1.11';
 
 		this.running = false;
 		this.frequency = msFrequency || 1000 * 5; //default to 5sec
