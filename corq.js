@@ -30,7 +30,7 @@
 		var debug = chatty || false;
 
 		// member variables
-		this.version = '0.1.9';
+		this.version = '0.1.10';
 		this.running = false;
 		this.frequency = msFrequency || 1000 * 5; //default to 5sec
 		this.delay = false;
