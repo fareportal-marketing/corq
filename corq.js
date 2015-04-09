@@ -32,7 +32,7 @@
 
 		
 		this.debug = chatty || false;
-		this.version = '0.1.13';
+		this.version = '0.1.14';
 
 		this.running = false;
 		this.frequency = msFrequency || 1000 * 5; //default to 5sec
@@ -45,7 +45,7 @@
 			if (_queue.length){
 				$item(_queue[0]);
 			}else{
-				_self.running = false;
+				this.running = false;
 				$debug('Corq: No items to process, shutting down the queue');
 			}
 		}
@@ -128,6 +128,7 @@
 		};
 
 		this.loadVia = function(loadCallback){
+			var _self = this;
 			$debug('Corq: Loading data...');
 			loadCallback(function(data){
 				_queue = data;
@@ -142,6 +143,7 @@
 
 		//add an item to the queue
 		this.push = function(type, item){
+			var _self = this;
 			_queue.push( { data:item, type:type, id:$guid() } );
 			if (_persist){ _persist(_queue); }
 			$debug('Corq: Item added to queue `' + type + '`');
