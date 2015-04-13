@@ -1,6 +1,6 @@
 {
   "name": "corq",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "main": "corq.js",
   "ignore": [
     ".jshintrc"
